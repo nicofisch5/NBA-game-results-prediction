@@ -13,8 +13,10 @@ season = "2010-2011"
 directory = "/var/www/basketball_reference/matches/united_states/nba/" + season
 
 gameNode = ["code","season","date","time","type"]
-haNode = ["home","away"]
-statNode
+haNode = {
+    "home": 'H',
+    "away": 'A',
+}
 
 conn = mysql.connector.connect(host="localhost",user="root",password="xy46oi03", database="NBA-games")
 cursor = conn.cursor()
@@ -35,12 +37,24 @@ for filename in os.listdir(directory):
         #print sqlQueryColumns + sqlQueryValues
         cursor.execute(sqlQueryColumns + sqlQueryValues)
 
-        gameId = conn.insert_id()
+        #gameId = conn.insert_id()
+        gameId = cursor.lastrowid
 
-        
+        # Stat
+        for node in haNode:
+            sqlQueryColumns = "INSERT INTO stat(game_id,ha,"
+            sqlQueryValues = " VALUES(" + str(gameId) + ",'" + haNode[node] + "',"
+
+            for subNode in jsonData[node]["totals"]:
+                sqlQueryColumns += STATS[subNode] + ","
+                sqlQueryValues += "'" + str(jsonData[node]["totals"][subNode]) + "',"
+
+        print sqlQueryColumns
+        print sqlQueryValues
 
         conn.commit()
 
+        break
         continue
     else:
         continue
