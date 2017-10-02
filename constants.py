@@ -22,7 +22,7 @@ STATS = {
     '+/-': 'PlusMinus',
     'USG%': 'USGP',
     'DRtg': 'DRtg',
-    '2P%': '2P%',
+    '2P%': '2PP',
     'DRB%': 'DRBP',
     'ORtg': 'ORtg',
     'TRB%': 'TRBP',
