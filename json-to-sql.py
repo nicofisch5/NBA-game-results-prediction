@@ -4,12 +4,12 @@ import mysql.connector
 from constants import STATS
 
 
-def loadJSON(filename):
+def load_json(filename):
     if filename.endswith(".json"):
         return json.loads(open(filename).read())
     return -1
 
-def getTeamIdByName(teamName):
+def get_team_id_by_name(teamName):
     cursor.execute("SELECT id FROM team WHERE name='" + teamName + "';")
     return cursor.fetchone()
 
@@ -29,7 +29,7 @@ cursor = conn.cursor()
 fileList = sorted(os.listdir(directory))
 
 for filename in fileList:
-    jsonData = loadJSON(directory + '/' + filename)
+    jsonData = load_json(directory + '/' + filename)
     if jsonData != -1:
         sqlQueryColumns = "INSERT INTO game("
         sqlQueryValues = " VALUES("
@@ -54,7 +54,7 @@ for filename in fileList:
 
         # Stat ans score
         for node in haNode:
-            teamId = getTeamIdByName(jsonData[node]["name"])
+            teamId = get_team_id_by_name(jsonData[node]["name"])
 
             # Game result
             result = 'W'
