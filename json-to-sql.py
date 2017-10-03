@@ -11,7 +11,7 @@ def loadJSON(filename):
 
 def getTeamIdByName(teamName):
     cursor.execute("SELECT id FROM team WHERE name='" + teamName + "';")
-    return cursor.fetchone();
+    return cursor.fetchone()
 
 
 season = "2010-2011"
@@ -48,13 +48,11 @@ for filename in fileList:
         sqlQueryColumns += "winner)"
         sqlQueryValues += "'" + winner + "');"
 
-        #print sqlQueryColumns + sqlQueryValues
         cursor.execute(sqlQueryColumns + sqlQueryValues)
 
-        #gameId = conn.insert_id()
         gameId = cursor.lastrowid
 
-        # Stat
+        # Stat ans score
         for node in haNode:
             teamId = getTeamIdByName(jsonData[node]["name"])
 
@@ -63,8 +61,9 @@ for filename in fileList:
             if (node == 'away' and aPTS < hPTS) or (node == 'home' and hPTS < aPTS):
                 result = 'L'
 
+            # Stat
             sqlQueryColumns = "INSERT INTO stat(game_id,ha,team_id,result,"
-            sqlQueryValues = " VALUES(" + str(gameId) + ",'" + haNode[node] + "'," + str(teamId[0]) + ",'" + result +"',"
+            sqlQueryValues = " VALUES(" + str(gameId) + ",'" + haNode[node] + "'," + str(teamId[0]) + ",'" + result + "',"
 
             for subNode in jsonData[node]["totals"]:
                 sqlQueryColumns += "`" + STATS[subNode] + "`,"
@@ -73,14 +72,17 @@ for filename in fileList:
             sqlQueryColumns = sqlQueryColumns[:-1] + ")"
             sqlQueryValues = sqlQueryValues[:-1] + ");"
 
-            print sqlQueryColumns
-            print sqlQueryValues
-
             cursor.execute(sqlQueryColumns + sqlQueryValues)
-   
+
+            # Score
+            for subNode in jsonData[node]["scores"]:
+                sqlQueryColumns = "INSERT INTO score(game_id,period,ha,score)"
+                sqlQueryValues = " VALUES(" + str(gameId) + ",'" + str(subNode) + "','" + haNode[node] + "'," + jsonData[node]["scores"][subNode] + ");"
+
+                cursor.execute(sqlQueryColumns + sqlQueryValues)
+
         conn.commit()
 
-        break
         continue
     else:
         continue
