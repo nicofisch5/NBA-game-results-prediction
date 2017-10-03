@@ -9,9 +9,26 @@ def load_json(filename):
         return json.loads(open(filename).read())
     return -1
 
+
 def get_team_id_by_name(teamName):
     cursor.execute("SELECT id FROM team WHERE name='" + teamName + "';")
     return cursor.fetchone()
+
+
+def get_dce_by_teams_names(home_team_name, away_team_name):
+    cursor.execute("SELECT division,conference FROM team WHERE name='" + home_team_name + "';")
+    home_team_d_c = cursor.fetchone()
+
+    cursor.execute("SELECT division,conference FROM team WHERE name='" + away_team_name + "';")
+    away_team_d_c = cursor.fetchone()
+
+    dce = 'E'
+    if home_team_d_c[0] == away_team_d_c[0]:
+        dce = 'D'
+    elif home_team_d_c[1] == away_team_d_c[1]:
+        dce = 'C'
+
+    return dce
 
 
 season = "2010-2011"
@@ -41,12 +58,18 @@ for filename in fileList:
         if aPTS > hPTS:
             winner = 'A'
 
+        # Game DCE
+        dce = get_dce_by_teams_names(
+            jsonData["home"]["name"],
+            jsonData["away"]["name"]
+        )
+
         for node in gameNode:
             sqlQueryColumns += node + ","
             sqlQueryValues += "'" + jsonData[node] + "',"
 
-        sqlQueryColumns += "winner)"
-        sqlQueryValues += "'" + winner + "');"
+        sqlQueryColumns += "dce,winner)"
+        sqlQueryValues += "'" + dce + "','" + winner + "');"
 
         cursor.execute(sqlQueryColumns + sqlQueryValues)
 
