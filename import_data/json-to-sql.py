@@ -85,7 +85,7 @@ for filename in fileList:
                 result = 'L'
 
             # Stat
-            sqlQueryColumns = "INSERT INTO stat(game_id,ha,team_id,result,"
+            sqlQueryColumns = "INSERT INTO team_stat(game_id,ha,team_id,result,"
             sqlQueryValues = " VALUES(" + str(gameId) + ",'" + haNode[node] + "'," + str(teamId[0]) + ",'" + result + "',"
 
             for subNode in jsonData[node]["totals"]:
