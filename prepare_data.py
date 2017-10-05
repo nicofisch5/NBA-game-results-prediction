@@ -31,12 +31,6 @@ def get_wl_ratio_by_team_id(team_id, game_id):
     return wl_ratio
 
 
-# For each game
-# H_won_ratio
-# A_Win_ratio
-# Div_Conf_Ext
-# Result
-
 data = []
 index = -1
 
@@ -71,11 +65,8 @@ for game in rs:
     data[index].append(round(aWL_ratio, 2))
     data[index].append(game.winner)
 
-    data[index].append(session.query(Team).get(team_ids['H']).code)
-    data[index].append(session.query(Team).get(team_ids['A']).code)
-
-    if index == 100:
-        break
+    #data[index].append(session.query(Team).get(team_ids['H']).code)
+    #data[index].append(session.query(Team).get(team_ids['A']).code)
 
 
 ofile = open('NBA-games.arff', "a")
