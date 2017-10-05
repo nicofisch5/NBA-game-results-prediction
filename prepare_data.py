@@ -59,9 +59,18 @@ for game in rs:
     hWL = get_wl_ratio_by_team_id(team_ids['H'], game.id)
     aWL = get_wl_ratio_by_team_id(team_ids['A'], game.id)
 
-    print session.query(Team).get(team_ids['H']).code, hWL, " - ", aWL, session.query(Team).get(team_ids['A']).code
+    data[index]['hWL'] = 0.00
+    data[index]['aWL'] = 0.00
 
-    if index == 100:
+    if (hWL['W'] + hWL['L']) > 0:
+        data[index]['hWL'] += hWL['W'] / ((1.0 * hWL['W']) + (1.0 * hWL['L']))
+
+    if (aWL['W'] + aWL['L']) > 0:
+        data[index]['aWL'] += aWL['W'] / ((1.0 * aWL['W']) + (1.0 * aWL['L']))
+
+    print session.query(Team).get(team_ids['H']).code, data[index]['hWL'], " - ", data[index]['aWL'], session.query(Team).get(team_ids['A']).code
+
+    if index == 200:
         break
 
 #ofile = open('ttest.csv', "wb")
