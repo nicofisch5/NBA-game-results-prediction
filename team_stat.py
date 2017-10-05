@@ -1,13 +1,13 @@
 from init import Base
-from sqlalchemy import Column, Integer, Float, Enum
+from sqlalchemy import Column, ForeignKey, Integer, Float, Enum
 
 
 class TeamStat(Base):
     __tablename__ = 'team_stat'
 
-    game_id = Column(Integer, primary_key=True)
+    game_id = Column(Integer, ForeignKey('game.id'), primary_key=True)
     ha = Column(Enum('H', 'A'), primary_key=True)
-    team_id = Column(Integer)
+    team_id = Column(Integer, ForeignKey('team.id'))
     result = Column(Enum('W', 'L'))
     STLP = Column(Float)
     FT = Column(Integer)
