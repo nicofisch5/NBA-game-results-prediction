@@ -46,11 +46,10 @@ rs = session.query(Game).filter_by(type='Season')
 for game in rs:
     index += 1
     data.append(index)
-    data[index] = {}
+    data[index] = []
     #print obj.game_id, obj.team_id, obj.ha, obj.result, obj.STLP
 
-    data[index]['dce'] = game.dce
-    data[index]['winner'] = game.winner
+    data[index].append(game.dce)
 
     # Get team_id of each team
     team_ids = get_team_ids_by_game_id(game.id)
@@ -59,25 +58,30 @@ for game in rs:
     hWL = get_wl_ratio_by_team_id(team_ids['H'], game.id)
     aWL = get_wl_ratio_by_team_id(team_ids['A'], game.id)
 
-    data[index]['hWL'] = 0.00
-    data[index]['aWL'] = 0.00
+    hWL_ratio = 0.00
+    aWL_ratio = 0.00
 
     if (hWL['W'] + hWL['L']) > 0:
-        data[index]['hWL'] += hWL['W'] / ((1.0 * hWL['W']) + (1.0 * hWL['L']))
+        hWL_ratio += hWL['W'] / ((1.0 * hWL['W']) + (1.0 * hWL['L']))
 
     if (aWL['W'] + aWL['L']) > 0:
-        data[index]['aWL'] += aWL['W'] / ((1.0 * aWL['W']) + (1.0 * aWL['L']))
+        aWL_ratio += aWL['W'] / ((1.0 * aWL['W']) + (1.0 * aWL['L']))
 
-    print session.query(Team).get(team_ids['H']).code, data[index]['hWL'], " - ", data[index]['aWL'], session.query(Team).get(team_ids['A']).code
+    data[index].append(round(hWL_ratio, 2))
+    data[index].append(round(aWL_ratio, 2))
+    data[index].append(game.winner)
 
-    if index == 200:
+    data[index].append(session.query(Team).get(team_ids['H']).code)
+    data[index].append(session.query(Team).get(team_ids['A']).code)
+
+    if index == 100:
         break
 
-#ofile = open('ttest.csv', "wb")
-#writer = csv.writer(ofile, delimiter='', quotechar='"', quoting=csv.QUOTE_ALL)
 
-#for row in reader:
-#    writer.writerow(row)
+ofile = open('NBA-games.arff', "a")
+writer = csv.writer(ofile, delimiter=',')
 
+for row in data:
+    writer.writerow(row)
 
-#ofile.close()
+ofile.close()
