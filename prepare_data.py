@@ -4,6 +4,7 @@ from game import Game
 from team import Team
 from score import Score
 from team_stat import TeamStat
+from sqlalchemy.sql import func
 
 
 def get_team_ids_by_game_id(game_id):
@@ -17,8 +18,8 @@ def get_team_ids_by_game_id(game_id):
 
 def get_wl_ratio_by_team_id(team_id, game_id):
     wl_ratio = {}
-    for wl in ['W','L']:
-        rs = session.query(TeamStat, Game) \
+    for wl in ['W', 'L']:
+        rs = session.query(TeamStat, Game)\
             .join(Game)\
             .filter(TeamStat.team_id == team_id)\
             .filter(TeamStat.result == wl)\
@@ -29,6 +30,22 @@ def get_wl_ratio_by_team_id(team_id, game_id):
         wl_ratio[wl] = rs
 
     return wl_ratio
+
+
+def get_eFGP_by_team_id(team_id, game_id):
+    rs = session.query(
+            func.sum(TeamStat.FG).label("FG"),
+            func.sum(TeamStat.b3P).label("b3P"),
+            func.sum(TeamStat.FGA).label("FGA"),
+        ) \
+        .join(Game)\
+        .filter(TeamStat.team_id == team_id) \
+        .filter(Game.type == 'Season') \
+        .filter(Game.id < game_id) \
+        .one()
+
+    return rs
+
 
 
 data = []
@@ -63,13 +80,37 @@ for game in rs:
 
     data[index].append(round(hWL_ratio, 2))
     data[index].append(round(aWL_ratio, 2))
-    data[index].append(game.winner)
+    data[index].append(round(hWL_ratio - aWL_ratio, 2))
+
+    # eFG% = (FG + (0.5 x b3P)) / FGA
+    h_eFGP = get_eFGP_by_team_id(team_ids['H'], game.id)
+    if h_eFGP[0] is not None:
+        h_eFGP = round((float(h_eFGP[0]) + (0.5 * float(h_eFGP[1]))) / float(h_eFGP[2]), 3)
+    else:
+        h_eFGP = -1
+
+    a_eFGP = get_eFGP_by_team_id(team_ids['A'], game.id)
+    if a_eFGP[0] is not None:
+        a_eFGP = round((float(a_eFGP[0]) + (0.5 * float(a_eFGP[1]))) / float(a_eFGP[2]), 3)
+    else:
+        a_eFGP = -1
 
     #data[index].append(session.query(Team).get(team_ids['H']).code)
     #data[index].append(session.query(Team).get(team_ids['A']).code)
+    data[index].append(h_eFGP)
+    data[index].append(a_eFGP)
+    data[index].append(round(h_eFGP - a_eFGP, 3))
+
+    data[index].append(game.winner)
+
+#    if index == 18:
+#        break
+
+#for row in data:
+#    print row
 
 
-ofile = open('NBA-games.arff', "a")
+ofile = open('NBA-games-winRatio_eFGP.arff', "a")
 writer = csv.writer(ofile, delimiter=',')
 
 for row in data:
