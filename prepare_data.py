@@ -5,7 +5,7 @@ from game import Game
 from team import Team
 from score import Score
 from team_stat import TeamStat
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, desc
 
 
 def get_team_ids_by_game_id(game_id):
@@ -17,23 +17,49 @@ def get_team_ids_by_game_id(game_id):
     return team_ids
 
 
-def get_wl_ratio_by_team_id(team_id, game_id):
-    wl_ratio = {}
-    for wl in ['W', 'L']:
-        rs = session.query(TeamStat, Game)\
-            .join(Game)\
-            .filter(TeamStat.team_id == team_id)\
-            .filter(TeamStat.result == wl)\
-            .filter(Game.type == 'Season') \
-            .filter(Game.id < game_id) \
-            .count()
+def get_last_game_ids_by_team_id(team_id, game_id, nb_of_games=82):
+    rs_game_ids = session.query(Game.id) \
+        .join(TeamStat) \
+        .filter(TeamStat.team_id == team_id) \
+        .filter(Game.type == 'Season') \
+        .filter(Game.id < game_id) \
+        .order_by(desc(Game.date)) \
+        .limit(nb_of_games) \
+        .all()
 
-        wl_ratio[wl] = rs
+    game_ids = []
+    for game_id in rs_game_ids:
+        game_ids.append(str(game_id[0]))
 
-    return wl_ratio
+    return game_ids
 
 
-def get_eFGP_by_team_id(team_id, game_id):
+def get_wl_ratio_by_team_id(team_id, game_id, nb_of_games=82):
+    result = {'W': 0, 'L': 0}
+
+    game_ids = get_last_game_ids_by_team_id(team_id, game_id, nb_of_games)
+    if not game_ids:
+        return result
+
+    rs = session.query(TeamStat.result, func.count(Game.id))\
+        .join(Game)\
+        .filter(TeamStat.team_id == team_id) \
+        .filter(Game.type == 'Season') \
+        .filter(Game.id.in_(game_ids)) \
+        .group_by(TeamStat.result) \
+        .all()
+
+    for row in rs:
+        result[row[0]] = row[1]
+
+    return result
+
+
+def get_eFGP_by_team_id(team_id, game_id, nb_of_games=82):
+    game_ids = get_last_game_ids_by_team_id(team_id, game_id, nb_of_games)
+    if not game_ids:
+        game_ids = [0]
+
     rs = session.query(
             func.sum(TeamStat.FG).label("FG"),
             func.sum(TeamStat.b3P).label("b3P"),
@@ -42,7 +68,7 @@ def get_eFGP_by_team_id(team_id, game_id):
         .join(Game)\
         .filter(TeamStat.team_id == team_id) \
         .filter(Game.type == 'Season') \
-        .filter(Game.id < game_id) \
+        .filter(Game.id.in_(game_ids)) \
         .one()
 
     return rs
@@ -60,7 +86,7 @@ def get_nb_of_games_by_team_id(team_id, game_id, nb_of_days):
         .filter(Game.type == 'Season') \
         .filter(Game.date >= from_date) \
         .filter(Game.date < to_date) \
-        .count()
+       .count()
 
     return rs
 
@@ -84,8 +110,8 @@ for game in rs:
     team_ids = get_team_ids_by_game_id(game.id)
 
     # Get WL ratio
-    hWL = get_wl_ratio_by_team_id(team_ids['H'], game.id)
-    aWL = get_wl_ratio_by_team_id(team_ids['A'], game.id)
+    hWL = get_wl_ratio_by_team_id(team_ids['H'], game.id, 8)
+    aWL = get_wl_ratio_by_team_id(team_ids['A'], game.id, 8)
 
     hWL_ratio = 0.00
     aWL_ratio = 0.00
@@ -101,13 +127,13 @@ for game in rs:
     data[index].append(round(hWL_ratio - aWL_ratio, 2))
 
     # eFG% = (FG + (0.5 x b3P)) / FGA
-    h_eFGP = get_eFGP_by_team_id(team_ids['H'], game.id)
+    h_eFGP = get_eFGP_by_team_id(team_ids['H'], game.id, 8)
     if h_eFGP[0] is not None:
         h_eFGP = round((float(h_eFGP[0]) + (0.5 * float(h_eFGP[1]))) / float(h_eFGP[2]), 3)
     else:
         h_eFGP = -1
 
-    a_eFGP = get_eFGP_by_team_id(team_ids['A'], game.id)
+    a_eFGP = get_eFGP_by_team_id(team_ids['A'], game.id, 8)
     if a_eFGP[0] is not None:
         a_eFGP = round((float(a_eFGP[0]) + (0.5 * float(a_eFGP[1]))) / float(a_eFGP[2]), 3)
     else:
@@ -124,21 +150,21 @@ for game in rs:
 
     # Tiredness
     data[index].append(
-        get_nb_of_games_by_team_id(team_ids['H'], game.id, 10)
-        - get_nb_of_games_by_team_id(team_ids['A'], game.id, 10)
+        get_nb_of_games_by_team_id(team_ids['H'], game.id, 4)
+        - get_nb_of_games_by_team_id(team_ids['A'], game.id, 4)
     )
 
     # Result
     data[index].append(game.winner)
 
-    if index == 100:
-        break
+#    if index == 100:
+#        break
 
 #for row in data:
 #    print row
 
 
-ofile = open('NBA-games-winRatio_eFGP_tirednessDiff.arff', "a")
+ofile = open('NBA-games-winRatio8_eFGP8_tirednessDiff4.arff', "a")
 writer = csv.writer(ofile, delimiter=',')
 
 for row in data:
