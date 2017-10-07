@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime, timedelta
 from init import session
 from game import Game
 from team import Team
@@ -43,6 +44,23 @@ def get_eFGP_by_team_id(team_id, game_id):
         .filter(Game.type == 'Season') \
         .filter(Game.id < game_id) \
         .one()
+
+    return rs
+
+
+def get_nb_of_games_by_team_id(team_id, game_id, nb_of_days):
+    # Dates
+    game = session.query(Game).get(game_id)
+    to_date = game.date
+    from_date = game.date - timedelta(days=nb_of_days)
+
+    rs = session.query(Game, TeamStat) \
+        .join(TeamStat) \
+        .filter(TeamStat.team_id == team_id) \
+        .filter(Game.type == 'Season') \
+        .filter(Game.date >= from_date) \
+        .filter(Game.date < to_date) \
+        .count()
 
     return rs
 
@@ -95,22 +113,32 @@ for game in rs:
     else:
         a_eFGP = -1
 
+    # Team's names
     #data[index].append(session.query(Team).get(team_ids['H']).code)
     #data[index].append(session.query(Team).get(team_ids['A']).code)
+
+    # eFGP
     data[index].append(h_eFGP)
     data[index].append(a_eFGP)
     data[index].append(round(h_eFGP - a_eFGP, 3))
 
+    # Tiredness
+    data[index].append(
+        get_nb_of_games_by_team_id(team_ids['H'], game.id, 10)
+        - get_nb_of_games_by_team_id(team_ids['A'], game.id, 10)
+    )
+
+    # Result
     data[index].append(game.winner)
 
-#    if index == 18:
-#        break
+    if index == 100:
+        break
 
 #for row in data:
 #    print row
 
 
-ofile = open('NBA-games-winRatio_eFGP.arff', "a")
+ofile = open('NBA-games-winRatio_eFGP_tirednessDiff.arff', "a")
 writer = csv.writer(ofile, delimiter=',')
 
 for row in data:
